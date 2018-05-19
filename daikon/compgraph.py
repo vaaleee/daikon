@@ -53,7 +53,7 @@ def define_computation_graph(source_vocab_size: int, target_vocab_size: int, bat
         #                                                        encoder_emb_inp,
         #                                                        sequence_length=source_sequence_length,
         #                                                        time_major=True)
-        encoder_outputs = tf.concat(bi_outputs, -1)
+        encoder_outputs = tf.concat(encoder_outputs, -1)
 
     with tf.variable_scope("Decoder"):
         decoder_cell = tf.contrib.rnn.LSTMCell(C.HIDDEN_SIZE)
