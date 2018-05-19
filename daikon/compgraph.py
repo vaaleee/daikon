@@ -39,20 +39,21 @@ def define_computation_graph(source_vocab_size: int, target_vocab_size: int, bat
         decoder_inputs_embedded = tf.nn.embedding_lookup(target_embedding, decoder_inputs)
 
     with tf.variable_scope("Encoder"):
-        #forward_cell = tf.nn.rnn_cell.BasicLSTMCell(C.HIDDEN_SIZE/2)
-        #backward_cell = tf.nn.rnn_cell.BasicLSTMCell(C.HIDDEN_SIZE/2)
-        encoder_cell = tf.contrib.rnn.LSTMCell(C.HIDDEN_SIZE)
-        initial_state = encoder_cell.zero_state(batch_size, tf.float32)
+        forward_cell = tf.nn.rnn_cell.BasicLSTMCell(C.HIDDEN_SIZE/2)
+        backward_cell = tf.nn.rnn_cell.BasicLSTMCell(C.HIDDEN_SIZE/2)
+        initial_encoder_cell = tf.contrib.rnn.LSTMCell(C.HIDDEN_SIZE)
+        initial_state = initial_encoder_cell.zero_state(batch_size, tf.float32)
 
-        encoder_outputs, encoder_final_state = tf.nn.dynamic_rnn(encoder_cell,
-                                                                 encoder_inputs_embedded,
-                                                                 initial_state=initial_state,
-                                                                 dtype=tf.float32)
-        #bi_outputs, encoder_state = tf.nn.bidirectional_dynamic_rnn(forward_cell,
-        #                                                        backward_cell,
-        #                                                        encoder_emb_inp,
-        #                                                        sequence_length=source_sequence_length,
-        #                                                        time_major=True)
+        #encoder_outputs, encoder_final_state = tf.nn.dynamic_rnn(encoder_cell,
+        #                                                         encoder_inputs_embedded,
+        #                                                         initial_state=initial_state,
+        #                                                         dtype=tf.float32)
+        bi_outputs, encoder_final_state = tf.nn.bidirectional_dynamic_rnn(forward_cell,
+                                                                backward_cell,
+                                                                encoder_inputs_embedded,
+                                                                initial_state=initial_state,
+                                                                sequence_length=source_sequence_length,
+                                                                time_major=True)
         encoder_outputs = tf.concat(encoder_outputs, -1)
 
     with tf.variable_scope("Decoder"):
