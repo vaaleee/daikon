@@ -39,8 +39,8 @@ def define_computation_graph(source_vocab_size: int, target_vocab_size: int, bat
         decoder_inputs_embedded = tf.nn.embedding_lookup(target_embedding, decoder_inputs)
 
     with tf.variable_scope("Encoder"):
-        forward_cell = tf.nn.rnn_cell.BasicLSTMCell(C.HIDDEN_SIZE)
-        backward_cell = tf.nn.rnn_cell.BasicLSTMCell(C.HIDDEN_SIZE)
+        forward_cell = tf.nn.rnn_cell.BasicLSTMCell(C.HIDDEN_SIZE/2)
+        backward_cell = tf.nn.rnn_cell.BasicLSTMCell(C.HIDDEN_SIZE/2)
         # encoder_cell = tf.contrib.rnn.LSTMCell(C.HIDDEN_SIZE)
         initial_state = encoder_cell.zero_state(batch_size, tf.float32)
 
