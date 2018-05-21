@@ -1,0 +1,71 @@
+Martina Stüssi (14-820-195) & Valentina Vogel (16-708-919)
+
+Maschinelle Übersetzung - Übung 5
+Preprocessing
+1) Tokenisierung:
+
+cat corpus/corpus.train.de | perl mosesdecoder/scripts/tokenizer/tokenizer.perl -l de > corpus.train.tok.de
+
+cat corpus/corpus.train.en | perl mosesdecoder/scripts/tokenizer/tokenizer.perl -l en > corpus.train.tok.en
+
+
+2) Truecasing
+
+perl mosesdecoder/scripts/recaser/train-truecaser.perl --corpus corpus.train.tok.de --model truecase-model.de
+
+perl mosesdecoder/scripts/recaser/train-truecaser.perl --corpus corpus.train.tok.en --model truecase-model.en
+
+cat corpus/corpus.train.de | perl mosesdecoder/scripts/recaser/truecase.perl --model truecase-model.de > corpus.train.tc.de
+
+cat corpus/corpus.train.en | perl mosesdecoder/scripts/recaser/truecase.perl --model truecase-model.en > corpus.train.tc.en
+
+3) Byte Pair Encoding
+
+a) sprachspezifisches BPE
+python subword-nmt/learn_bpe.py -i corpus.train.tc.de -s 50000 -o bpe.codes.de
+python subword-nmt/learn_bpe.py -i corpus.train.tc.en -s 50000 -o bpe.codes.en
+
+b) gemeinsames BPE
+cat corpus.train.tc.de corpus.train.tc.de > corpus.train.tc.mixed
+
+python subword-nmt/learn_bpe.py -i corpus.train.tc.mixed -s 100000 -o bpe.codes.mixed
+python subword-nmt/learn_bpe.py -i corpus.train.tc.mixed -s 75000 -o bpe.codes.mixed.smaller
+
+subword-nmt/apply_bpe.py -c bpe.codes.mixed < corpus.train.tc.de > corpus.train.mixedbpe.de
+subword-nmt/apply_bpe.py -c bpe.codes.mixed < corpus.train.tc.en > corpus.train.mixedbpe.en
+
+
+Postprocessing
+
+1) BPE rückgängig machen:
+cat trans.test.en | sed -r 's/(@@ )|(@@ ?$)//g' > words.trans.test.en
+
+2) Truecasing rückgängig machen:
+cat words.trans.test.en | perl mosesdecoder/scripts/recaser/detruecase.perl > detc.trans.test.en
+
+3) Tokenisierung rückgängig
+cat detc.trans.test.en | perl mosesdecoder/scripts/tokenizer/detokenizer.perl -l en > detok.trans.test.en
+
+Überlegungen zur Aufgabe
+
+Zuerst haben wir ein Training mit dem bestehenden Modell angefangen, dass aber aufgrund des Server-Reboots abgebrochen wurde. Dies wollten wir tun, um Vergleichswerte für spätere Modelle zu haben. Leider konnten wir das aus Zeitgründen dann nicht mehr tun.
+
+Um die Resultate zu verbessern, haben wir ein grösseres BPE Modell verändert (subword-nmt Skript einmal mit Parameter -s 75000 (für das kleinere Modell) und einmal mit Parameter -s 100000 (für das Modell unserer definitiven Abgabe) . Ausserdem haben wir für beide Sprachen ein gemeinsames Modell verwendet, indem wir die tokenisierten und getruecasten Daten in eine Datei gesteckt und daraus das BPE-Modell mit learn_bpe gelernt.
+
+Wir haben uns ausserdem überlegt, wieder ein Dropout Layer einzubauen. Da dies bei unserem Versuch in der letzten Übung zwar die Perplexity auf den Trainingsdaten langsamer verringert hat, aber nicht zu einer geringeren Perplexity auf den Testdaten geführt hat, haben wir uns dagegen entschieden.
+
+Stattdessen wollten wir das bidirektionale Encoding implementieren und sind dazu den Anleitungen auf folgender Website gefolgt: https://www.tensorflow.org/tutorials/seq2seq
+Leider mussten wir feststellen, dass unsere erste Intuition nicht ausgereicht hat. Wir haben kleine Veränderungen am Code ausprobiert (siehe Kommentare in compgraph.py), das bidirektionale Encoding aber nicht erfolgreich implementieren können. Konkret sind wir daran gescheitert, dass wir nicht wussten, wo wir jeden Satz rückwärts abspeichern müssen und wie die Informationen vom Vorwärts- und Rückwärtssatz dann in einer gemeinsamen Zelle abgespeichert werden und dem Encoder-Modell übergeben werden können.
+
+Hyperparameter
+Wir haben zwei Modelle trainiert. Das Modell, welches die Übersetzung für unsere finale Abgabe generiert hat, wurde mit den unveränderten Hyperparametern für 6 Epochen trainiert (Vokabulargrösse 50’000, embedding size = 512, hidden size = 1024). Das BPE-Modell hatte die Grösse 100’000 Zeichen (gemeinsam aus beiden Sprachen erstellt). Die daraus resultierende Übersetzung ist im Abgabeordner auf Github und heisst testset.txt
+
+Aus Zeitgründen haben wir noch ein kleineres Modell trainiert ( embedding size = 256, hidden size = 512) und damit ebenfalls eine Übersetzung generiert. Diese ist wesentlich schlechter, aber wir haben sie als Vergleich ebenfalls in den Ordner getan (translation.small.model.test.en).
+
+Für die Übersetzungen des Dev-Sets haben wir die BLEU-Scores mit der Musterlösung der beiden Modelle berechnet. 
+Die Übersetzung unseres besseren Modells hat einen Wert von 0.28 erzielt, das schlechtere Modell 0.24. Wir sind erstaunt, dass die Werte so hoch sind.
+
+Abgabe:
+translation.small.model.test.en
+testset.txt (unser bestes Resultat)
+daikon code mit unseren Veränderungsversuchen.
